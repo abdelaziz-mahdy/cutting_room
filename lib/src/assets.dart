@@ -1,5 +1,4 @@
 // ignore: deprecated_member_use
-import 'dart:cli';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
@@ -90,8 +89,9 @@ class Asset {
   /// Attempts to find this asset in the cutting_room package, like
   /// [findAbsolutePathToPackageAsset], and falls back to creating a
   /// new file with the asset's bytes, like [inflateToLocalFile].
-  String findOrInflate([Directory? destinationDirectory]) {
-    return findAbsolutePathToPackageAsset() ?? inflateToLocalFile(destinationDirectory);
+  Future<String> findOrInflate([Directory? destinationDirectory]) async {
+    return (await findAbsolutePathToPackageAsset()) ??
+        inflateToLocalFile(destinationDirectory);
   }
 
   /// Attempts to find and return the absolute file path to this
@@ -102,26 +102,23 @@ class Asset {
   /// cutting_room package structure. In this case, use
   /// [inflateToLocalFile], which will write the asset's bytes
   /// to a new file and return that path.
-  String? findAbsolutePathToPackageAsset() {
+  Future<String?> findAbsolutePathToPackageAsset() async {
     if (_fileLookupCache.containsKey(fileName)) {
       return _fileLookupCache[fileName]!;
     } else {
       assetsLog.info("Looking up file path for '$fileName'");
       final packageUri = Uri.parse('package:cutting_room/assets/$fileName');
       assetsLog.fine("Package URI: $packageUri");
-      final future = Isolate.resolvePackageUri(packageUri);
+      final absoluteUri = await Isolate.resolvePackageUri(packageUri);
 
-      // waitFor is strongly discouraged in general, but it is accepted as the
-      // only reasonable way to load package assets outside of Flutter.
-      // ignore: deprecated_member_use
-      final absoluteUri = waitFor(future, timeout: const Duration(seconds: 5));
       assetsLog.fine("Resolved asset URI: $absoluteUri");
       if (absoluteUri != null) {
         final file = File.fromUri(absoluteUri);
         if (file.existsSync()) {
           return file.path;
         }
-        assetsLog.warning("Resolved asset absolute URI, but file doesn't exist");
+        assetsLog
+            .warning("Resolved asset absolute URI, but file doesn't exist");
         return null;
       } else {
         // Last ditch attempt: look in local folder

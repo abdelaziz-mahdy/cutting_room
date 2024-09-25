@@ -111,7 +111,7 @@ class ColorBitmapComposition extends VirtualComposition {
   Future<FfmpegStream> build(FfmpegBuilder builder, CompositionSettings settings) async {
     final compStream = builder.createStream(hasVideo: true, hasAudio: _hasAudio);
 
-    final absoluteBitmapPath = _bitmapAsset.findOrInflate(Directory("./generated_assets"));
+    final absoluteBitmapPath = await _bitmapAsset.findOrInflate(Directory("./generated_assets"));
 
     final colorVideoStream = builder.addAsset(absoluteBitmapPath, hasAudio: false);
     builder.addFilterChain(FilterChain(
